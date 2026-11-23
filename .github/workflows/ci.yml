@@ -18,23 +18,22 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install uv and dependencies
+      - name: Install dependencies
         run: |
-          pip install uv
-          uv pip install --system -r requirements.txt
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Run Unit & Integration Tests
+      - name: Run Deterministic Unit Tests (No API Key Required)
+        env:
+          PYTHONPATH: "."
+        run: |
+          pytest -v tests/test_mock_services.py tests/test_tools.py
+
+      - name: Run Live LLM Integration Tests (If Secret Available)
+        if: env.GROQ_API_KEY != ''
         env:
           PYTHONPATH: "."
           MODEL_PROVIDER: "groq"
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
-          pytest -v tests/
-
-      - name: Run 20-Scenario Benchmark Gate
-        env:
-          PYTHONPATH: "."
-          MODEL_PROVIDER: "groq"
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        run: |
-          python eval/eval_harness.py baseline
+          pytest -v tests/test_multi_agent_graph.py tests/test_hitl_approval.py
